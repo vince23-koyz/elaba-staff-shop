@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "410543398181",
+    "project_id": "elaba-app",
+    "storage_bucket": "elaba-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:410543398181:android:099458844bbca497de8ecc",
+        "android_client_info": {
+          "package_name": "com.elaba_staff"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAwIgGoNo29gUneMvcjrEGxGyxf5rSMADg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

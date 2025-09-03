@@ -10,7 +10,6 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/Navigator';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { launchImageLibrary } from 'react-native-image-picker';
 
 const RegisterShopScreen: React.FC = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -25,20 +24,6 @@ const RegisterShopScreen: React.FC = () => {
   const [city, setCity] = useState('');
   const [website, setWebsite] = useState('');
   const [operatingHours, setOperatingHours] = useState('');
-  const [banner, setBanner] = useState<any>(null);
-
-  const pickImage = async () => {
-    const result: any = await launchImageLibrary({
-      mediaType: 'photo',
-      quality: 0.8,
-    });
-
-    if (result.didCancel) return;
-
-    if (result.assets && result.assets.length > 0) {
-      setBanner(result.assets[0]); // save selected image
-    }
-  };
 
   const handleNext = async () => {
     if (!shopName || !ownerFullName || !street || !zone || !barangay || !city || !website || !operatingHours) {
@@ -46,27 +31,20 @@ const RegisterShopScreen: React.FC = () => {
       return;
     }
 
-    const formData = new FormData();
-    formData.append('name', shopName);
-    formData.append('address', `${street}, ${zone}, ${barangay}, ${city}`);
-    formData.append('website', website);
-    formData.append('owner_name', ownerFullName);
-    formData.append('operation_hours', operatingHours);
-    formData.append('admin_id', admin_id);
-
-    if (banner) {
-      formData.append('logo', {
-        uri: banner.uri,
-        type: banner.type,
-        name: banner.fileName || 'shop_logo.jpg',
-      });
-    }
+    const shopData = {
+      name: shopName,
+      address: `${street}, ${zone}, ${barangay}, ${city}`,
+      website: website,
+      owner_name: ownerFullName,
+      operation_hours: operatingHours,
+      admin_id: admin_id,
+    };
 
     try {
       const response = await axios.post(
         'http://10.0.2.2:5000/api/shop',
-        formData,
-        { headers: { 'Content-Type': 'multipart/form-data' } }
+        shopData,
+        { headers: { 'Content-Type': 'application/json' } }
       );
 
       if (response.data.success) {
@@ -86,39 +64,100 @@ const RegisterShopScreen: React.FC = () => {
   return (
     <LinearGradient colors={['#a9e5df', '#8baef3']} style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
-        <Text style={styles.title}>Register Shop</Text>
-
-        {/* Upload Logo */}
-        <TouchableOpacity style={styles.bannerPicker} onPress={pickImage} activeOpacity={0.8}>
-          {banner ? (
-            <View style={{ flex: 1, width: "100%", height: "100%" }}>
-              <Image source={{ uri: banner.uri }} style={styles.bannerPreview} resizeMode="cover" />
-
-              {/* Overlay for change picture */}
-              <View style={styles.overlay}>
-                <Text style={styles.overlayText}>Change Picture</Text>
-              </View>
-            </View>
-          ) : (
-            <View style={styles.placeholder}>
-              <Text style={styles.bannerText}>+ Upload Shop Banner</Text>
-            </View>
-          )}
-        </TouchableOpacity>
+        
+        {/* Header Section */}
+        <View style={styles.header}>
+          <Text style={styles.headerText}>eLABA Staff Portal</Text>
+          <View style={styles.titleContainer}>
+            <Image source={require('../assets/img/elaba_icon.png')} style={styles.icon} />
+            <Text style={styles.title}>Register Your Shop</Text>
+            <Text style={styles.subtitle}>Set up your laundry business profile</Text>
+          </View>
+        </View>
 
         <View style={styles.formCard}>
-          <TextInput style={styles.input} placeholder="Shop Name" value={shopName} onChangeText={setShopName} placeholderTextColor="#aaa" />
-          <TextInput style={styles.input} placeholder="Owner Full Name" value={ownerFullName} onChangeText={setOwnerFullName} placeholderTextColor="#aaa" />
-          <TextInput style={styles.input} placeholder="Street" value={street} onChangeText={setStreet} placeholderTextColor="#aaa" />
-          <TextInput style={styles.input} placeholder="Zone#" value={zone} onChangeText={setZone} placeholderTextColor="#aaa" />
-          <TextInput style={styles.input} placeholder="Barangay" value={barangay} onChangeText={setBarangay} placeholderTextColor="#aaa" />
-          <TextInput style={styles.input} placeholder="City" value={city} onChangeText={setCity} placeholderTextColor="#aaa" />
-          <TextInput style={styles.input} placeholder="Website / FB Page" value={website} onChangeText={setWebsite} placeholderTextColor="#aaa" />
-          <TextInput style={styles.input} placeholder="Operating Hours" value={operatingHours} onChangeText={setOperatingHours} placeholderTextColor="#aaa" />
+          {/* Shop Information Section */}
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>SHOP INFORMATION</Text>
+            <View style={styles.inputGroup}>
+              <TextInput 
+                style={styles.input} 
+                placeholder="Shop Name" 
+                value={shopName} 
+                onChangeText={setShopName} 
+                placeholderTextColor="#aaa" 
+              />
+              <TextInput 
+                style={styles.input} 
+                placeholder="Owner Full Name" 
+                value={ownerFullName} 
+                onChangeText={setOwnerFullName} 
+                placeholderTextColor="#aaa" 
+              />
+            </View>
+          </View>
+
+          {/* Address Section */}
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>ADDRESS</Text>
+            <View style={styles.inputGroup}>
+              <View style={styles.row}>
+                <TextInput 
+                  style={[styles.input, styles.halfInput]} 
+                  placeholder="Street" 
+                  value={street} 
+                  onChangeText={setStreet} 
+                  placeholderTextColor="#aaa" 
+                />
+                <TextInput 
+                  style={[styles.input, styles.halfInput, { marginLeft: 12 }]} 
+                  placeholder="Zone#" 
+                  value={zone} 
+                  onChangeText={setZone} 
+                  placeholderTextColor="#aaa" 
+                />
+              </View>
+              <TextInput 
+                style={styles.input} 
+                placeholder="Barangay" 
+                value={barangay} 
+                onChangeText={setBarangay} 
+                placeholderTextColor="#aaa" 
+              />
+              <TextInput 
+                style={styles.input} 
+                placeholder="City" 
+                value={city} 
+                onChangeText={setCity} 
+                placeholderTextColor="#aaa" 
+              />
+            </View>
+          </View>
+
+          {/* Business Details Section */}
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>BUSINESS DETAILS</Text>
+            <View style={styles.inputGroup}>
+              <TextInput 
+                style={styles.input} 
+                placeholder="Website / Facebook Page" 
+                value={website} 
+                onChangeText={setWebsite} 
+                placeholderTextColor="#aaa" 
+              />
+              <TextInput 
+                style={styles.input} 
+                placeholder="Operating Hours (e.g., 8:00 AM - 6:00 PM)" 
+                value={operatingHours} 
+                onChangeText={setOperatingHours} 
+                placeholderTextColor="#aaa" 
+              />
+            </View>
+          </View>
 
           <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
             <LinearGradient colors={['#4A90E2', '#357ABD']} start={{x:0, y:0}} end={{x:1, y:0}} style={styles.nextGradient}>
-              <Text style={styles.nextText}>Next</Text>
+              <Text style={styles.nextText}>Continue Setup</Text>
             </LinearGradient>
           </TouchableOpacity>
         </View>
@@ -130,52 +169,74 @@ const RegisterShopScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollContainer: { paddingBottom: 50, paddingHorizontal: 20 },
-  title: { fontSize: 24, fontWeight: '700', color: '#222', alignSelf: 'center', marginVertical: 20 },
-  formCard: { backgroundColor: '#fff', borderRadius: 20, padding: 20, shadowColor: '#000', shadowOpacity: 0.08, shadowOffset: { width:0, height:6 }, shadowRadius: 8, elevation: 5 },
-  input: { backgroundColor: '#f7f9fc', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14, marginBottom: 12, fontSize: 16, borderColor: '#e0e0e0', borderWidth: 1, color: '#222' },
-  nextButton: { marginTop: 20, borderRadius: 12, overflow: 'hidden' },
-  nextGradient: { paddingVertical: 14, borderRadius: 12, alignItems: 'center' },
-  nextText: { fontSize: 18, color: '#fff', fontWeight: '700' },
-  bannerPicker: {
-    alignSelf: 'center',
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 12,
-    backgroundColor: '#f7f9fc',
-    width: '100%',
-    height: 160,
-    justifyContent: 'center',
-    alignItems: 'center',
+  
+  // Header styles
+  header: { alignItems: 'center', marginTop: 40, marginBottom: 20 },
+  headerText: { fontSize: 16, fontWeight: '600', color: '#fff', letterSpacing: 1, marginBottom: 15 },
+  titleContainer: { alignItems: 'center' },
+  icon: { width: 80, height: 80, marginBottom: 12, borderRadius: 40 },
+  title: { fontSize: 28, fontWeight: '700', color: '#222', textAlign: 'center', marginBottom: 4 },
+  subtitle: { fontSize: 16, color: '#555', textAlign: 'center', marginBottom: 8 },
+  
+  // Form card
+  formCard: { 
+    backgroundColor: '#fff', 
+    borderRadius: 20, 
+    padding: 24, 
+    shadowColor: '#000', 
+    shadowOpacity: 0.1, 
+    shadowOffset: { width: 0, height: 8 }, 
+    shadowRadius: 12, 
+    elevation: 8 
+  },
+  
+  // Section styles
+  section: { marginBottom: 24 },
+  sectionLabel: { 
+    fontSize: 13, 
+    fontWeight: '700', 
+    color: '#555', 
+    marginBottom: 12, 
+    letterSpacing: 1 
+  },
+  inputGroup: { gap: 8 },
+  
+  // Input styles
+  row: { flexDirection: 'row', marginBottom: 8 },
+  input: { 
+    backgroundColor: '#f7f9fc', 
+    borderRadius: 12, 
+    paddingHorizontal: 16, 
+    paddingVertical: 16, 
+    marginBottom: 12, 
+    fontSize: 14, 
+    borderColor: '#e0e0e0', 
+    borderWidth: 1, 
+    color: '#222' 
+  },
+  halfInput: { flex: 1, minWidth: 0 },
+  
+  // Button styles
+  nextButton: { 
+    marginTop: 24, 
+    borderRadius: 12, 
     overflow: 'hidden',
+    elevation: 4,
+    shadowColor: '#4A90E2',
+    shadowOpacity: 0.3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 8,
   },
-  placeholder: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+  nextGradient: { 
+    paddingVertical: 16, 
+    borderRadius: 12, 
+    alignItems: 'center' 
   },
-  bannerText: {
-    color: '#555',
-    fontSize: 16,
-  },
-  bannerPreview: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 12,
-  },
-  overlay: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    paddingVertical: 8,
-    alignItems: 'center',
-  },
-  overlayText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
+  nextText: { 
+    fontSize: 18, 
+    color: '#fff', 
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
 });
 

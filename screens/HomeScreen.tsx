@@ -103,7 +103,8 @@ export default function HomeScreen() {
         {/* Content */}
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <View style={styles.shopBanner}>
-            <Text style={styles.shopBannerText}>[Shop Image Here]</Text>
+            <Text style={styles.shopBannerText}>Welcome to</Text>
+            <Text style={styles.shopNameText}>{shopName || 'Your Shop'}</Text>
           </View>
 
           {/* 🔹 Stats Cards */}
@@ -201,7 +202,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center', alignItems: 'center', marginBottom: 20,
     shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 4, elevation: 4,
   },
-  shopBannerText: { fontSize: 16, fontWeight: '600', color: '#777' },
+  shopBannerText: { 
+    fontSize: 16, 
+    fontWeight: '500', 
+    color: '#777',
+    marginBottom: 8,
+  },
+  shopNameText: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#333',
+    textAlign: 'center',
+  },
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
   statCard: {
     backgroundColor: '#ddffc1dd', width: '48%', borderRadius: 16,

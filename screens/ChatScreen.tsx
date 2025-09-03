@@ -98,7 +98,7 @@ export default function ChatScreen({ navigation }: { navigation: ChatScreenNavig
         {/* Search */}
         <View style={styles.searchWrapper}>
           <TextInput
-            placeholder="🔍 Search chats..."
+            placeholder="🔍 Search..."
             style={styles.searchInput}
             value={search}
             onChangeText={setSearch}
