@@ -12,7 +12,8 @@ import HomeScreen from '../screens/HomeScreen';
 import BookingManagement from '../screens/BookingManagement';
 import ServiceManagement from '../screens/ServiceManages/ServiceManagement';
 import SettingsScreen from '../screens/SettingScreen';
-import ChatScreen from '../screens/ChatScreen';
+import ChatScreen from '../screens/Messaging/MessagingScreen';
+import ConvoScreen from '../screens/Messaging/ConvoScreen';
 import NotificationsScreen from '../screens/NotificationsScreen';
 import AddServiceScreen from '../screens/ServiceManages/AddServiceScreen';
 import ServiceDetails from '../screens/ServiceManages/ServiceDetails';
@@ -30,6 +31,12 @@ export type RootStackParamList = {
     ServiceDetails: { serviceId: number; shopId: string | null };
     Settings: undefined;
     Chat: undefined;
+    Convo: {
+        customerId: string;
+        customerName: string;
+        shopId: string;
+        adminId: string;
+    };
     Notifs: undefined;
 };
 
@@ -95,6 +102,11 @@ const Navigator = () => {
         <Stack.Screen 
           name="Chat" 
           component={ChatScreen} 
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen 
+          name="Convo" 
+          component={ConvoScreen} 
           options={{ headerShown: false }}
         />
         <Stack.Screen 

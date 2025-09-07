@@ -27,22 +27,53 @@ const LoginScreen: React.FC = () => {
     setLoading(true);
 
     try {
-      const response = await axios.post(
+      // Step 1: Login admin
+      const loginResponse = await axios.post(
         'http://10.0.2.2:5000/api/admin/login',
         { phone_number: phoneNumber, password },
         { headers: { 'Content-Type': 'application/json' } }
       );
-      if (response.data.success) {
-        const adminId = response.data.admin_id;
-        await AsyncStorage.setItem('admin_id', adminId.toString());
-        console.log('Admin ID saved:', adminId);
+      
+      if (loginResponse.data.success) {
+        const adminId = loginResponse.data.admin_id;
+        console.log('Admin login successful, ID:', adminId);
 
-        Alert.alert('Success', response.data.message || 'Login successful!');
+        // Step 2: Get shop by admin_id
+        try {
+          console.log('🔍 Fetching shop for admin_id:', adminId);
+          const shopResponse = await axios.get(`http://10.0.2.2:5000/api/shop/admin/${adminId}`);
+          console.log('📦 Shop response:', shopResponse.data);
+          
+          const shop = shopResponse.data.shop;
+          
+          if (shop) {
+            // Store complete user data
+            const userData = {
+              admin_id: adminId,
+              adminId: adminId, // Both versions for compatibility
+              shop_id: shop.shop_id,
+              shopId: shop.shop_id, // Both versions for compatibility
+              shop_name: shop.name,
+              shop_address: shop.address
+            };
+            
+            await AsyncStorage.setItem('userData', JSON.stringify(userData));
+            console.log('✅ Complete user data saved:', userData);
 
-        // Use replace instead of reset
-        navigation.replace('Home');
+            Alert.alert('Success', 'Login successful!');
+            navigation.replace('Home');
+          } else {
+            console.log('❌ No shop found in response');
+            Alert.alert('Error', 'No shop found for this admin. Please contact support.');
+          }
+        } catch (shopError: any) {
+          console.error('❌ Error fetching shop:', shopError);
+          console.error('❌ Shop error response:', shopError.response?.data);
+          console.error('❌ Shop error status:', shopError.response?.status);
+          Alert.alert('Error', `Failed to load shop information. Error: ${shopError.response?.data?.message || shopError.message}`);
+        }
       } else {
-        Alert.alert('Error', response.data.message || 'Login failed.');
+        Alert.alert('Error', loginResponse.data.message || 'Login failed.');
       }
     } catch (error: any) {
       console.log('Login Error:', error.response?.data || error.message || error);
