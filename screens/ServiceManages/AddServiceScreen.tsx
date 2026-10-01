@@ -5,7 +5,7 @@ import {
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { RootStackParamList } from '../../navigation/Navigator'
-import axios from 'axios'
+import { api, API_ENDPOINTS } from '../../config/api'
 import { useAdminData } from '../../hooks/useAdminData'
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>
@@ -19,7 +19,7 @@ export default function AddServiceScreen() {
   const [price, setPrice] = useState('')
   const [quantity, setQuantity] = useState('')
   const [packageName, setPackageName] = useState('')
-  const [status, setStatus] = useState(false) // Switch: true = Active
+  const [status, setStatus] = useState(false)
   const [loading, setLoading] = useState(false)
 
   const handleSubmit = async () => {
@@ -33,7 +33,7 @@ export default function AddServiceScreen() {
     }
     setLoading(true)
     try {
-      await axios.post('http://10.0.2.2:5000/api/service', {
+  await api.post(API_ENDPOINTS.SERVICE.BASE, {
         shop_id: shopId,
         offers,
         description,
@@ -66,14 +66,14 @@ export default function AddServiceScreen() {
         <Text style={styles.label}>Price</Text>
         <TextInput style={styles.input} value={price} onChangeText={setPrice} placeholder="Enter price" keyboardType="numeric" />
 
-        <Text style={styles.label}>Stock</Text>
+        <Text style={styles.label}>Quantity</Text>
         <TextInput style={styles.input} value={quantity} onChangeText={setQuantity} placeholder="Enter quantity" keyboardType="numeric" />
 
         <Text style={styles.label}>Package</Text>
         <TextInput style={styles.input} value={packageName} onChangeText={setPackageName} placeholder="Enter package name" />
 
         <View style={styles.toggleRow}>
-          <Text style={styles.label}>Active Status: {status ? 'Active' : 'Inactive'}</Text>
+          <Text style={styles.label}>Status: {status ? 'Active' : 'Inactive'}</Text>
           <Switch
             value={status}
             onValueChange={setStatus}

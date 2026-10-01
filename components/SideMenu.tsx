@@ -7,9 +7,17 @@ import {
 import LinearGradient from 'react-native-linear-gradient';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/Navigator';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import socketService from '../services/socketService';
+import { api, API_ENDPOINTS, API_CONFIG } from '../config/api';
+import { useNotificationContext } from '../context/NotificationContext';
+import messaging from '@react-native-firebase/messaging';
+import { deleteDeviceToken } from '../services/notificationService';
+import { useAdminData } from '../hooks/useAdminData';
 
 
 const { width } = Dimensions.get('window');
+let cachedAdminDisplayName: string | null = null;
 
 // ✅ SideMenu Props
 type SideMenuProps = {
@@ -20,7 +28,7 @@ type SideMenuProps = {
 };
 
 // ✅ Menu Item type for screens that don't require parameters
-type MenuScreens = 'Home' | 'BookingManagement' | 'ServiceManagement' | 'Settings';
+type MenuScreens = 'Home' | 'BookingManagement' | 'ServiceManagement' | 'Settings' | 'Earnings';
 
 type MenuItem = {
   text: string;
@@ -29,15 +37,104 @@ type MenuItem = {
 };
 
 export default function SideMenu({ navigation, menuOpen, toggleMenu, adminName }: SideMenuProps) {
-  const slideAnim = useRef(new Animated.Value(-250)).current;
+  const slideAnim = useRef(new Animated.Value(-width)).current;
   const [logoutModal, setLogoutModal] = useState(false);
+  const [displayName, setDisplayName] = useState(adminName || 'Admin');
+  const { disconnectUser } = useNotificationContext();
+  const { shopLogo } = useAdminData();
+
+  // Load admin name from AsyncStorage if not provided
+  useEffect(() => {
+    const loadAdminData = async () => {
+      if (cachedAdminDisplayName) {
+        setDisplayName(cachedAdminDisplayName);
+        return;
+      }
+
+      try {
+        const userData = await AsyncStorage.getItem('userData');
+        if (userData) {
+          const parsedData = JSON.parse(userData);
+
+          // Check if we have admin_id to fetch admin details
+          const adminId = parsedData.admin_id || parsedData.adminId;
+
+          if (adminId) {
+            try {
+              // Fetch admin details from backend
+              const response = await api.get(API_ENDPOINTS.ADMIN.BY_ID(adminId));
+
+              if (response.data) {
+                const adminData = response.data;
+
+                // Construct full name from first_name and last_name
+                const fullName = `${adminData.first_name || ''} ${adminData.last_name || ''}`.trim();
+
+                const resolvedName = fullName || adminName || 'Admin';
+                cachedAdminDisplayName = resolvedName;
+                setDisplayName(resolvedName);
+              } else {
+                const fallbackName = adminName || 'Admin';
+                cachedAdminDisplayName = fallbackName;
+                setDisplayName(fallbackName);
+              }
+            } catch (apiError: any) {
+              console.error('Error fetching admin details:', apiError.response?.data || apiError.message);
+              // Fallback to stored name or prop
+              const fallbackName = adminName || 'Admin';
+              cachedAdminDisplayName = fallbackName;
+              setDisplayName(fallbackName);
+            }
+          } else {
+            setDisplayName(adminName || 'Admin');
+          }
+        } else {
+          const fallbackName = adminName || 'Admin';
+          cachedAdminDisplayName = fallbackName;
+          setDisplayName(fallbackName);
+        }
+      } catch (error) {
+        console.error('Error loading admin data:', error);
+        const fallbackName = adminName || 'Admin';
+        cachedAdminDisplayName = fallbackName;
+        setDisplayName(fallbackName);
+      }
+    };
+
+    loadAdminData();
+  }, [adminName]);
+
+  // Get initials from display name
+  const getInitials = (name: string) => {
+    if (!name || name.trim() === '') return 'A';
+
+    const cleanName = name.trim();
+    const nameParts = cleanName.split(' ').filter(part => part.length > 0);
+
+    if (nameParts.length === 0) return 'A';
+
+    let result;
+    if (nameParts.length === 1) {
+      // For single names like "Dennis", still show first 2 letters if available
+      if (cleanName.length >= 2) {
+        result = cleanName.charAt(0).toUpperCase() + cleanName.charAt(1).toUpperCase();
+      } else {
+        result = cleanName.charAt(0).toUpperCase();
+      }
+    } else {
+      // For multiple names, first + last
+      result = nameParts[0].charAt(0).toUpperCase() + nameParts[nameParts.length - 1].charAt(0).toUpperCase();
+    }
+
+    return result;
+  };
 
   // Slide animation
   useEffect(() => {
     Animated.timing(slideAnim, {
       toValue: menuOpen ? 0 : -width,
       duration: 250,
-      useNativeDriver: false,
+      useNativeDriver: true,
     }).start();
   }, [menuOpen]);
 
@@ -49,34 +146,90 @@ export default function SideMenu({ navigation, menuOpen, toggleMenu, adminName }
     { text: 'Dashboard', icon: require('../assets/img/dashboard.png'), navigate: 'Home' },
     { text: 'Booking Management', icon: require('../assets/img/booking.png'), navigate: 'BookingManagement' },
     { text: 'Service Management', icon: require('../assets/img/service.png'), navigate: 'ServiceManagement' },
+    { text: 'Earnings & Reports', icon: require('../assets/img/dashboard.png'), navigate: 'Earnings' },
     { text: 'Settings', icon: require('../assets/img/settings.png'), navigate: 'Settings' },
   ];
 
   // Logout handler
-  const handleLogout = () => {
-    setLogoutModal(false);
-    toggleMenu();
+  const handleLogout = async () => {
+    try {
+      // Attempt to delete device token on backend
+      try {
+        const fcmToken = await messaging().getToken();
+        if (fcmToken) {
+          await deleteDeviceToken(fcmToken);
+        }
+      } catch (deactErr: any) {
+        console.warn('⚠️ [STAFF] Failed to delete device token (continuing logout):', deactErr?.response?.data || deactErr?.message || deactErr);
+      }
 
-    // Fully type-safe reset
-    navigation.reset({
-      index: 0,
-      routes: [{ name: 'Login', params: undefined }],
-    });
+      // Delete local FCM token as well
+      try {
+        await messaging().deleteToken();
+      } catch (e: any) {
+        console.warn('⚠️ [STAFF] Failed to delete local FCM token:', e?.message || e);
+      }
+
+      // Disconnect from socket and clean up all messaging connections + notifications
+      disconnectUser(); // This will handle socket disconnect and clear notifications
+
+      // Clear all AsyncStorage data
+      await AsyncStorage.multiRemove([
+        'userData',
+        'adminId',
+        'adminName',
+        'shopId',
+        'shopName',
+        'isLoggedIn',
+        'fcmToken',
+        'pendingReminderDismissed',
+      ]);
+
+      setLogoutModal(false);
+      toggleMenu();
+
+      // Fully type-safe reset
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Login', params: undefined }],
+      });
+    } catch (error) {
+      console.error('❌ [STAFF] Error during logout cleanup:', error);
+      // Still proceed with logout even if cleanup fails
+      setLogoutModal(false);
+      toggleMenu();
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Login', params: undefined }],
+      });
+    }
   };
 
   return (
     <>
-      <Animated.View style={[styles.sideMenu, { left: slideAnim }]}>
+      <Animated.View style={[styles.sideMenu, { transform: [{ translateX: slideAnim }] }]}>
         {/* Header */}
         <LinearGradient colors={['#6bd1c5', '#356dc1']} style={styles.header}>
           <View style={styles.avatarContainer}>
             <View style={styles.avatarWrapper}>
-              <Image source={require('../assets/img/avatar.png')} style={styles.avatar} />
+              {shopLogo ? (
+                <Image 
+                  source={{ uri: shopLogo.startsWith('http') ? shopLogo : `${API_CONFIG.BASE_ORIGIN}${shopLogo}` }} 
+                  style={styles.avatar}
+                  resizeMode="cover"
+                />
+              ) : (
+                <View style={styles.avatarInitials}>
+                  <Text style={styles.avatarInitialsText}>
+                    {getInitials(displayName)}
+                  </Text>
+                </View>
+              )}
               <View style={styles.onlineIndicator} />
             </View>
           </View>
-          <Text style={styles.welcomeText}>Welcome back,</Text>
-          <Text style={styles.nameText}>{adminName}</Text>
+          <Text style={styles.welcomeText}>Hello</Text>
+          <Text style={styles.nameText}>{displayName}!</Text>
           <View style={styles.headerDivider} />
         </LinearGradient>
 
@@ -215,6 +368,19 @@ const styles = StyleSheet.create({
   avatar: { 
     width: '100%', 
     height: '100%' 
+  },
+  avatarInitials: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#fff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 42,
+  },
+  avatarInitialsText: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#1fa0a2',
   },
   onlineIndicator: {
     position: 'absolute',

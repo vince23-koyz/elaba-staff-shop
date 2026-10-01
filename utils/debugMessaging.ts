@@ -1,6 +1,6 @@
 // Debug utility for messaging
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
+import { api, API_ENDPOINTS } from '../config/api';
 
 export const debugMessagingFlow = async () => {
   console.log('🔍 === MESSAGING DEBUG START ===');
@@ -23,7 +23,7 @@ export const debugMessagingFlow = async () => {
         // Test backend connectivity
         try {
           console.log('🌐 Testing backend connectivity...');
-          const testResponse = await axios.get('http://10.0.2.2:5000/api/shops');
+          const testResponse = await api.get('/shops');
           console.log('✅ Backend reachable:', testResponse.status);
         } catch (error) {
           console.log('❌ Backend not reachable:', (error as any).message);
@@ -33,17 +33,17 @@ export const debugMessagingFlow = async () => {
         // Test conversations API
         try {
           console.log('🔄 Testing conversations API...');
-          const convUrl = `http://10.0.2.2:5000/api/messages/conversations/admin/${adminId}`;
+          const convUrl = `/messages/conversations/admin/${adminId}`;
           console.log('📡 Calling:', convUrl);
           
-          const convResponse = await axios.get(convUrl);
+          const convResponse = await api.get(convUrl);
           console.log('📥 Conversations response:', convResponse.data);
           
           // Test shop messages API
-          const shopUrl = `http://10.0.2.2:5000/api/messages/shop/${shopId}`;
+          const shopUrl = API_ENDPOINTS.MESSAGES.SHOP_ALL(shopId);
           console.log('📡 Calling:', shopUrl);
           
-          const shopResponse = await axios.get(shopUrl);
+          const shopResponse = await api.get(shopUrl);
           console.log('📥 Shop messages response:', shopResponse.data);
           
         } catch (apiError) {
@@ -75,7 +75,7 @@ export const createTestMessage = async (adminId: string, shopId: string) => {
       message_text: `Test message from customer to admin ${adminId} for shop ${shopId} at ${new Date().toISOString()}`
     };
     
-    const response = await axios.post('http://10.0.2.2:5000/api/messages', testMessage);
+    const response = await api.post(API_ENDPOINTS.MESSAGES.BASE, testMessage);
     console.log('✅ Test message created:', response.data);
     
     return response.data;

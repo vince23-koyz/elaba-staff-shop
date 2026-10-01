@@ -3,7 +3,7 @@ import React, { useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image, Animated, StatusBar, Dimensions } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../navigation/Navigator';
+import { RootStackParamList } from '../../navigation/Navigator';
 
 const { width, height } = Dimensions.get('window');
 
@@ -38,12 +38,12 @@ export default function StaffWelcome({ navigation }: Props) {
   return (
     <>
       <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
-      <LinearGradient
-        colors={['#669dea', '#5ea39a']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.container}
-      >
+        <LinearGradient
+          colors={['#669dea', '#5ea39a']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.container}
+        >
         {/* Background Pattern */}
         <View style={styles.backgroundPattern}>
           <View style={[styles.circle, styles.circle1]} />
@@ -52,44 +52,34 @@ export default function StaffWelcome({ navigation }: Props) {
         </View>
 
         <Animated.View 
-          style={[
-            styles.centerContent,
-            {
-              opacity: fadeAnim,
-              transform: [
-                { translateY: slideAnim },
-                { scale: scaleAnim }
-              ]
-            }
-          ]}
-        >
-          {/* Logo Container */}
-          <View style={styles.logoContainer}>
-            <View style={styles.logoBackground}>
-              <Image
-                source={require('../assets/img/elaba_icon.png')}
-                style={styles.image}
-              />
-            </View>
-            <View style={styles.logoGlow} />
-          </View>
-
-          {/* Welcome Text */}
-          <Text style={styles.welcomeText}>Welcome Admin</Text>
-          <Text style={styles.subWelcomeText}>Ready to manage your business?</Text>
-
-          {/* Service Description */}
-          <View style={styles.descriptionContainer}>
-            <Text style={styles.serviceText}>eLABA</Text>
-            <Text style={styles.serviceSubtext}>Staff & Shop Management Platform</Text>
-            <View style={styles.featuresList}>
-              <Text style={styles.featureItem}>• Manage bookings & services</Text>
-              <Text style={styles.featureItem}>• Track customer orders</Text>
-              <Text style={styles.featureItem}>• Monitor business performance</Text>
-            </View>
-          </View>
-
-          {/* Get Started Button */}
+          style={[ 
+            styles.centerContent, 
+            { 
+              opacity: fadeAnim, 
+              transform: [ 
+                { translateY: slideAnim }, 
+                { scale: scaleAnim } 
+              ] 
+            } 
+          ]} 
+        > 
+          {/* Logo Container */} 
+          <View style={styles.logoContainer}> 
+            <View style={styles.logoBackground}> 
+              <Image 
+                source={require('../../assets/img/elaba-transparent.png')} 
+                style={styles.image} 
+              /> 
+            </View> 
+            <View style={styles.logoGlow} /> 
+          </View> 
+ 
+          {/* Welcome Text */} 
+          <Text style={styles.welcomeText}>Welcome to eLaba</Text> 
+          <Text style={styles.subWelcomeText}>Ready to manage your Shop?</Text> 
+        </Animated.View>
+        {/* Get Started Button at the bottom */}
+        <View style={styles.bottomButtonContainer}>
           <TouchableOpacity
             style={styles.button}
             onPress={() => navigation.navigate('Login')}
@@ -102,19 +92,27 @@ export default function StaffWelcome({ navigation }: Props) {
               style={styles.buttonGradient}
             >
               <Text style={styles.buttonText}>Get Started</Text>
-              <Text style={styles.buttonArrow}>→</Text>
             </LinearGradient>
           </TouchableOpacity>
-
-          {/* Version Info */}
+        </View>
+        {/* Version Info */}
+        <View style={{ alignItems: 'center', marginBottom: 10 }}>
           <Text style={styles.versionText}>Version 1.0.0</Text>
-        </Animated.View>
+        </View>
       </LinearGradient>
     </>
   );
 }
 
 const styles = StyleSheet.create({
+  bottomButtonContainer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   container: {
     flex: 1,
   },
@@ -184,8 +182,8 @@ const styles = StyleSheet.create({
     zIndex: -1,
   },
   image: {
-    width: 80,
-    height: 80,
+    width: 120,
+    height: 120,
     borderRadius: 40,
   },
   welcomeText: {
@@ -203,39 +201,6 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.9)',
     textAlign: 'center',
     marginBottom: 30,
-    fontWeight: '500',
-  },
-  descriptionContainer: {
-    alignItems: 'center',
-    marginBottom: 40,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    padding: 25,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
-  },
-  serviceText: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#ffffff',
-    textAlign: 'center',
-    marginBottom: 8,
-    letterSpacing: 1,
-  },
-  serviceSubtext: {
-    fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.8)',
-    textAlign: 'center',
-    marginBottom: 20,
-    fontWeight: '500',
-  },
-  featuresList: {
-    alignItems: 'flex-start',
-  },
-  featureItem: {
-    fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.9)',
-    marginBottom: 8,
     fontWeight: '500',
   },
   button: {
@@ -260,11 +225,6 @@ const styles = StyleSheet.create({
     color: '#667eea',
     fontWeight: '700',
     marginRight: 8,
-  },
-  buttonArrow: {
-    fontSize: 18,
-    color: '#667eea',
-    fontWeight: 'bold',
   },
   versionText: {
     fontSize: 12,

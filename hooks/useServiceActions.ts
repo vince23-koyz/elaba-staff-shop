@@ -1,6 +1,6 @@
 // hooks/useServiceActions.ts
 import { useState } from "react";
-import axios from "axios";
+import { api, API_ENDPOINTS } from "../config/api";
 import { ToastAndroid } from "react-native";
 
 export function useServiceActions() {
@@ -9,7 +9,7 @@ export function useServiceActions() {
   const updateService = async (serviceId: number, payload: any) => {
     setLoading(true);
     try {
-      await axios.put(`http://10.0.2.2:5000/api/service/${serviceId}`, payload);
+    await api.put(`${API_ENDPOINTS.SERVICE.BASE}/${serviceId}`, payload);
       ToastAndroid.show("Service updated", ToastAndroid.SHORT);
       return true;
     } catch (error) {
@@ -24,7 +24,7 @@ export function useServiceActions() {
   const deleteService = async (serviceId: number) => {
     setLoading(true);
     try {
-      await axios.delete(`http://10.0.2.2:5000/api/service/${serviceId}`);
+    await api.delete(`${API_ENDPOINTS.SERVICE.BASE}/${serviceId}`);
       ToastAndroid.show("Service deleted", ToastAndroid.SHORT);
       return true;
     } catch (error) {

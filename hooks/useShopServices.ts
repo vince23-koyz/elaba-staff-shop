@@ -1,6 +1,6 @@
 // eLaba_staff/hooks/useShopServices.ts
 import { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
+import { api } from '../config/api';
 
 export const useShopServices = (shopId: string | null) => {
   const [services, setServices] = useState<any[]>([]);
@@ -20,7 +20,7 @@ export const useShopServices = (shopId: string | null) => {
 
     try {
       console.log("📡 Fetching services for shop:", shopId);
-      const res = await axios.get(`http://10.0.2.2:5000/api/service/shop/${shopId}`);
+    const res = await api.get(`/service/shop/${shopId}`);
       console.log("✅ Response:", res.data);
 
       if (Array.isArray(res.data)) {

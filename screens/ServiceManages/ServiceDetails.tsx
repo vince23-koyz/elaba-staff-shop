@@ -1,18 +1,14 @@
 // ServiceManages/ServiceDetails.tsx
 import { 
   StyleSheet, Text, View, ScrollView, ActivityIndicator, 
-  TextInput, TouchableOpacity, Switch, Alert, Image 
+  TextInput, TouchableOpacity, Switch, Alert, Image
 } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import { RouteProp, useRoute, useNavigation } from '@react-navigation/native'
 import type { RootStackParamList } from '../../navigation/Navigator'
 import { useShopServices } from '../../hooks/useShopServices'
 import { useServiceActions } from '../../hooks/useServiceActions'
-
-// icons
-import editIcon from '../../assets/img/edit.png'
-import closeIcon from '../../assets/img/close.png'
-import deleteIcon from '../../assets/img/delete.png'
+import ServiceFormModal from './ServiceFormModal'
 
 type ServiceDetailsRouteProp = RouteProp<RootStackParamList, 'ServiceDetails'>
 
@@ -33,19 +29,25 @@ export default function ServiceDetails() {
     quantity: "",
     status: "Inactive"
   });
+  const [formVisible, setFormVisible] = useState(false);
+  const [validation, setValidation] = useState({
+    offers: '',
+    price: '',
+    quantity: ''
+  });
 
   useEffect(() => {
-  if (service) {
-    setEditableService({
-      offers: service.offers || "",
-      description: service.description || "",
-      price: String(service.price ?? ""),
-      quantity: String(service.quantity ?? ""),
-      status: service.status || "Inactive"
-    });
-    setStatus(service.status === "Active");
-  }
-}, [service]);
+    if (service) {
+      setEditableService({
+        offers: service.offers || "",
+        description: service.description || "",
+        price: String(service.price ?? ""),
+        quantity: String(service.quantity ?? ""),
+        status: service.status || "Inactive"
+      });
+      setStatus(service.status === "Active");
+    }
+  }, [service]);
 
 
 const [status, setStatus] = useState(
@@ -69,8 +71,16 @@ const [status, setStatus] = useState(
   }
 
   const handleEditToggle = () => {
-    setIsEditing(!isEditing)
-    setEditableService(service) // reset kapag cancel edit
+    // Open modal overlay for edit instead of inline editing
+    setEditableService({
+      offers: service.offers || "",
+      description: service.description || "",
+      price: String(service.price ?? ""),
+      quantity: String(service.quantity ?? ""),
+      status: service.status || "Inactive"
+    });
+    setValidation({ offers: '', price: '', quantity: '' });
+    setFormVisible(true);
   }
 
   const handleDelete = () => {
@@ -87,7 +97,27 @@ const [status, setStatus] = useState(
     )
   }
 
+  const validateFields = () => {
+    let valid = true;
+    let v = { offers: '', price: '', quantity: '' };
+    if (!editableService.offers.trim()) {
+      v.offers = 'Service name is required.';
+      valid = false;
+    }
+    if (!editableService.price || isNaN(Number(editableService.price))) {
+      v.price = 'Valid price is required.';
+      valid = false;
+    }
+    if (!editableService.quantity || isNaN(Number(editableService.quantity))) {
+      v.quantity = 'Valid stock is required.';
+      valid = false;
+    }
+    setValidation(v);
+    return valid;
+  };
+
   const handleSave = async () => {
+    if (!validateFields()) return;
     const success = await updateService(service.service_id, {
       offers: editableService.offers,
       description: editableService.description,
@@ -95,7 +125,10 @@ const [status, setStatus] = useState(
       quantity: Number(editableService.quantity),
       status: status ? "Active" : "Inactive"
     });
-    if (success) setIsEditing(false);
+    if (success) {
+      setIsEditing(false);
+      Alert.alert('Success', 'Service updated successfully!');
+    }
   };
 
   return (
@@ -103,33 +136,43 @@ const [status, setStatus] = useState(
       <View style={styles.card}>
         {/* Header */}
         <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+            <Image source={require('../../assets/img/back.png')} style={styles.backIcon} />
+          </TouchableOpacity>
           <Text style={styles.headerTitle}>Service Details</Text>
           <View style={styles.actions}>
             <TouchableOpacity onPress={handleEditToggle} style={styles.iconBtn}>
               <Image 
-                source={isEditing ? closeIcon : editIcon} 
+                source={isEditing ? require('../../assets/img/close.png') : require('../../assets/img/edit.png')} 
                 style={styles.iconImg} 
               />
             </TouchableOpacity>
             <TouchableOpacity onPress={handleDelete} style={styles.iconBtn}>
               <Image 
-                source={deleteIcon} 
+                source={require('../../assets/img/delete.png')} 
                 style={[styles.iconImg, {tintColor: "#e74c3c"}]} 
               />
             </TouchableOpacity>
           </View>
         </View>
 
+
+        {/* Divider */}
+        <View style={styles.divider} />
+
         {/* Service Name */}
-        <Text style={styles.label}>Service Name</Text>
+        <Text style={styles.label}>Service Name <Text style={{color:'#e74c3c'}}>*</Text></Text>
         <TextInput
-          style={[styles.input, !isEditing && styles.readonlyInput]}
+          style={[styles.input, !isEditing && styles.readonlyInput, validation.offers && styles.inputError]}
           value={editableService.offers}
-          onChangeText={(text) =>
-            setEditableService({ ...editableService, offers: text })
-          }
+          onChangeText={(text) => {
+            setEditableService({ ...editableService, offers: text });
+            if (validation.offers) setValidation(v => ({ ...v, offers: '' }));
+          }}
           editable={isEditing}
+          placeholder="Enter service name"
         />
+        {validation.offers ? <Text style={styles.errorText}>{validation.offers}</Text> : null}
 
         {/* Description */}
         <Text style={styles.label}>Description</Text>
@@ -141,31 +184,41 @@ const [status, setStatus] = useState(
           }
           editable={isEditing}
           multiline
+          placeholder="Enter description (optional)"
         />
 
         {/* Price */}
-        <Text style={styles.label}>Price</Text>
+        <Text style={styles.label}>Price <Text style={{color:'#e74c3c'}}>*</Text></Text>
         <TextInput
-          style={[styles.input, !isEditing && styles.readonlyInput]}
+          style={[styles.input, !isEditing && styles.readonlyInput, validation.price && styles.inputError]}
           value={String(editableService?.price ?? "")}
-          onChangeText={(text) =>
-            setEditableService({ ...editableService, price: text })
-          }
+          onChangeText={(text) => {
+            setEditableService({ ...editableService, price: text });
+            if (validation.price) setValidation(v => ({ ...v, price: '' }));
+          }}
           editable={isEditing}
           keyboardType="numeric"
+          placeholder="Enter price"
         />
+        {validation.price ? <Text style={styles.errorText}>{validation.price}</Text> : null}
 
         {/* Stock */}
-        <Text style={styles.label}>Stock</Text>
+        <Text style={styles.label}>Quantity<Text style={{color:'#e74c3c'}}>*</Text></Text>
         <TextInput
-          style={[styles.input, !isEditing && styles.readonlyInput]}
+          style={[styles.input, !isEditing && styles.readonlyInput, validation.quantity && styles.inputError]}
           value={String(editableService?.quantity ?? "")}
-          onChangeText={(text) =>
-            setEditableService({ ...editableService, quantity: text })
-          }
+          onChangeText={(text) => {
+            setEditableService({ ...editableService, quantity: text });
+            if (validation.quantity) setValidation(v => ({ ...v, quantity: '' }));
+          }}
           editable={isEditing}
           keyboardType="numeric"
+          placeholder="Enter stock quantity"
         />
+        {validation.quantity ? <Text style={styles.errorText}>{validation.quantity}</Text> : null}
+
+        {/* Divider */}
+        <View style={styles.divider} />
 
         {/* Status */}
         <View style={styles.toggleRow}>
@@ -180,15 +233,31 @@ const [status, setStatus] = useState(
           />
         </View>
 
-        {/* Save Button */}
-        {isEditing && (
-          <TouchableOpacity style={styles.saveBtn} onPress={handleSave} disabled={actionLoading}>
-            <Text style={styles.saveBtnText}>
-              {actionLoading ? "Saving..." : "Save Changes"}
-            </Text>
-          </TouchableOpacity>
-        )}
+        {/* Inline save removed in favor of modal editing */}
       </View>
+      {/* Edit Service Modal */}
+      <ServiceFormModal
+        visible={formVisible}
+        onClose={() => setFormVisible(false)}
+        mode="edit"
+        initial={{
+          service_id: service.service_id,
+          offers: service.offers,
+          description: service.description,
+          price: service.price,
+          quantity: service.quantity,
+          package: (service as any).package,
+          status: service.status,
+          shop_id: shopId || undefined
+        }}
+        shopId={shopId}
+        onSaved={() => {
+          // After successful save, just close modal; list will refresh when navigating back.
+          setFormVisible(false);
+          // Optionally, navigate back to list
+          // navigation.goBack();
+        }}
+      />
     </ScrollView>
   )
 }
@@ -215,11 +284,28 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 18
   },
+  backBtn: {
+    marginRight: 10,
+    padding: 6,
+    borderRadius: 10,
+    backgroundColor: '#ecf0f1',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  backIcon: {
+    width: 22,
+    height: 22,
+    resizeMode: 'contain',
+    tintColor: '#2980b9',
+  },
   headerTitle: {
+    flex: 1,
     fontSize: 24,
     fontWeight: "700",
     color: "#2c3e50",
-    letterSpacing: 0.5
+    letterSpacing: 0.5,
+    textAlign: 'center',
+    marginLeft: -32, // visually center title with back button
   },
   actions: {
     flexDirection: "row",
@@ -280,6 +366,21 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "700",
     letterSpacing: 0.5
+  },
+  // ...existing code...
+  divider: {
+    height: 1,
+    backgroundColor: '#ecf0f1',
+    marginVertical: 16,
+  },
+  errorText: {
+    color: '#e74c3c',
+    fontSize: 13,
+    marginBottom: 2,
+    marginLeft: 2,
+  },
+  inputError: {
+    borderColor: '#e74c3c',
   },
   center: {
     flex: 1,

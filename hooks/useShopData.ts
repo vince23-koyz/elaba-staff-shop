@@ -1,7 +1,7 @@
 // hooks/useShopData.ts
 import { useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
+import { api, API_ENDPOINTS } from '../config/api';
 
 interface ShopData {
   shop_id: number;
@@ -22,15 +22,24 @@ export function useShopData() {
     const fetchShopData = async () => {
       try {
         setIsLoading(true);
-        const adminId = await AsyncStorage.getItem('admin_id');
+        
+        // Get the complete userData object stored by LoginScreen
+        const userDataStr = await AsyncStorage.getItem('userData');
+        if (!userDataStr) {
+          setError('No user data found');
+          return;
+        }
+
+        const userData = JSON.parse(userDataStr);
+        const adminId = userData.admin_id || userData.adminId;
         
         if (!adminId) {
           setError('No admin ID found');
           return;
         }
 
-        console.log('Fetching shop data for admin:', adminId);
-        const response = await axios.get(`http://10.0.2.2:5000/api/shop/admin/${adminId}`);
+    console.log('Fetching shop data for admin:', adminId);
+    const response = await api.get(API_ENDPOINTS.SHOP.BY_ADMIN(adminId));
         
         if (response.data?.shop) {
           setShopData(response.data.shop);
